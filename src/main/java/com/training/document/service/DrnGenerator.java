@@ -1,38 +1,38 @@
 package com.training.document.service;
 
 import com.training.document.entity.DocType;
-import com.training.document.repository.DocumentRepository;
-import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.security.SecureRandom;
-
 @Component
-@RequiredArgsConstructor
 public class DrnGenerator {
 
-    private static final String ALPHANUMERIC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final int RANDOM_PART_LENGTH = 6;
-    private static final int MAX_ATTEMPTS = 5;
+    private static final String SEQUENCE_NAME = "document_drn_seq";
+    private static final int NUMERIC_PART_LENGTH = 6;
+    private static final long MAX_SEQUENCE_VALUE = 999_999L;
 
-    private final SecureRandom random = new SecureRandom();
-    private final DocumentRepository documentRepository;
+    private final JdbcTemplate jdbcTemplate;
+    private final String qualifiedSequenceName;
 
-    public String generate(DocType docType) {
-        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-            String drn = docType.name() + "-" + randomAlphanumeric();
-            if (documentRepository.findByDrn(drn).isEmpty()) {
-                return drn;
-            }
-        }
-        throw new IllegalStateException("Could not generate a unique DRN for docType " + docType);
+    public DrnGenerator(JdbcTemplate jdbcTemplate,
+                        @Value("${spring.jpa.properties.hibernate.default_schema:document}") String schema) {
+        this.jdbcTemplate = jdbcTemplate;
+        this.qualifiedSequenceName = schema + "." + SEQUENCE_NAME;
     }
 
-    private String randomAlphanumeric() {
-        StringBuilder sb = new StringBuilder(RANDOM_PART_LENGTH);
-        for (int i = 0; i < RANDOM_PART_LENGTH; i++) {
-            sb.append(ALPHANUMERIC.charAt(random.nextInt(ALPHANUMERIC.length())));
+    @PostConstruct
+    void createSequence() {
+        jdbcTemplate.execute("CREATE SEQUENCE IF NOT EXISTS " + qualifiedSequenceName + " START WITH 1 INCREMENT BY 1");
+    }
+
+    public String generate(DocType docType) {
+        Long next = jdbcTemplate.queryForObject("SELECT NEXTVAL('" + qualifiedSequenceName + "')", Long.class);
+        if (next == null || next > MAX_SEQUENCE_VALUE) {
+            throw new IllegalStateException(
+                    "DRN sequence exhausted the " + NUMERIC_PART_LENGTH + "-digit numeric range for docType " + docType);
         }
-        return sb.toString();
+        return docType.name() + "-" + String.format("%0" + NUMERIC_PART_LENGTH + "d", next);
     }
 }
