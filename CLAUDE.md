@@ -56,8 +56,17 @@ com.training.document/
 
 ### Document lifecycle
 
-- **DRN (Document Reference Number):** format `<docType-code>-<6 random alphanumeric chars>`, e.g. `rt-A1B2C3`.
-  Generated in `DrnGenerator`, which retries (up to 5 attempts) on collision by checking `DocumentRepository.findByDrn`.
+- **DRN (Document Reference Number):** format `<docType-code>-<6-digit zero-padded sequence number>`, e.g.
+  `rt-000001`. Generated in `DrnGenerator` from a single DB sequence (`document_drn_seq`) shared across all
+  `docType`s — the numeric part just keeps incrementing regardless of `docType`, it is not reset per type. The
+  sequence is created lazily (`@PostConstruct`, `CREATE SEQUENCE IF NOT EXISTS`) under the schema configured by
+  `spring.jpa.properties.hibernate.default_schema` (`DB_SCHEMA`, defaults to `document`), and read via
+  `SELECT NEXTVAL('<schema>.document_drn_seq')`. The `NEXTVAL(...)` function form is used deliberately instead of
+  H2's `NEXT VALUE FOR` syntax, because `NEXTVAL(...)` is the one form both H2 and PostgreSQL (the production DB —
+  see `deployment/config/application.properties`) support identically. Because the numeric part is fixed-width,
+  `DrnGenerator` throws `IllegalStateException` once the sequence passes 999,999 rather than silently emitting a
+  7-digit DRN — there's no retry loop or uniqueness pre-check needed, since the sequence itself guarantees
+  uniqueness.
 - **DocType** constants are deliberately lowercase (`rt`, `tp`), not the Java-convention `UPPER_SNAKE_CASE` — this
   lets `@Enumerated(EnumType.STRING)` persist the code as-is, and Jackson's default enum handling serialize/deserialize
   it as-is, with no converter or custom `@JsonValue`/`@JsonCreator` needed.
@@ -100,3 +109,7 @@ honored, but there is deliberately no client-controlled sort parameter, so the o
 - Both test classes autowire a `JdbcTemplate` to insert `document` rows directly with explicit `modified_at` values
   when a test needs deterministic ordering (e.g. search ordering/paging tests) — going through the service would
   always stamp "now", making tie-break ordering by `docType` unreliable to assert on with real clock timestamps.
+- The test datasource URL (`src/test/resources/application.yml`) includes `INIT=CREATE SCHEMA IF NOT EXISTS document`
+  even though it doesn't set `hibernate.default_schema` — `DrnGenerator` still resolves its schema-qualified sequence
+  name to `document` (the `@Value` default), so the schema has to exist in the in-memory test DB for
+  `DrnGenerator.createSequence()` to succeed on context startup.

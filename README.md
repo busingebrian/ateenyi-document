@@ -30,7 +30,7 @@ The app starts on port `8080` under context path `/api/document`, backed by a fi
 | Field       | Type                              | Notes                                                    |
 |-------------|------------------------------------|-----------------------------------------------------------|
 | `id`        | UUID                                | auto-generated                                             |
-| `drn`       | String                              | generated: `<docType>-<6 random alphanumeric chars>`       |
+| `drn`       | String                              | generated: `<docType>-<6-digit zero-padded sequence number>` |
 | `docType`   | enum: `rt`, `tp`                    | 2-char code, both on the wire and in the DB                |
 | `status`    | enum: `SUBMITTED`, `APPROVED`, `REJECTED` |                                                       |
 | `content`   | String                              | max length 2000                                            |
