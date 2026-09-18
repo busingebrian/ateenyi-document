@@ -23,4 +23,6 @@ public class SaveDocumentRequest {
     @NotBlank(message = "content is required")
     @Size(max = 2000, message = "Length exceeded")
     private String content;
+
+    private String tin;
 }

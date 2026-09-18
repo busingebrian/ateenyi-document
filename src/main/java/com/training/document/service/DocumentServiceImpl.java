@@ -44,6 +44,7 @@ public class DocumentServiceImpl implements DocumentService {
         document.setDocType(request.getDocType());
         document.setStatus(request.getStatus());
         document.setContent(request.getContent());
+        document.setTin(request.getTin());
 
         Document saved = documentRepository.save(document);
         log.info("Document saved: id={}, drn={}, status={}", saved.getId(), saved.getDrn(), saved.getStatus());

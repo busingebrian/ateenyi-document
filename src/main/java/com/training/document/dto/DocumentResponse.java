@@ -19,6 +19,7 @@ public class DocumentResponse {
     private DocType docType;
     private DocStatus status;
     private String content;
+    private String tin;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
 }

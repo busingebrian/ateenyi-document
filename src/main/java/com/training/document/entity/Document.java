@@ -1,14 +1,6 @@
 package com.training.document.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -43,6 +35,9 @@ public class Document {
 
     @Column(name = "content", nullable = false, length = 2000)
     private String content;
+
+    @Column(name = "tin", length = 20)
+    private String tin;
 
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;

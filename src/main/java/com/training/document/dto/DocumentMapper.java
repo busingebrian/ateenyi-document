@@ -14,6 +14,7 @@ public final class DocumentMapper {
                 .docType(document.getDocType())
                 .status(document.getStatus())
                 .content(document.getContent())
+                .tin(document.getTin())
                 .createdAt(document.getCreatedAt())
                 .modifiedAt(document.getModifiedAt())
                 .build();
