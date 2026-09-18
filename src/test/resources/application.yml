@@ -13,6 +13,10 @@ spring:
     hibernate:
       ddl-auto: create-drop
 
+document:
+  notification:
+    send-type: none
+
 logging:
   level:
     root: warn

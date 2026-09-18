@@ -18,6 +18,12 @@ spring:
         default_schema: ${DB_SCHEMA:document}
         format_sql: false
 
+document:
+  notification:
+    send-type: sync
+    url: http://${NOTIFICATION_URL:localhost}:8081/api/notification
+    email: ${NOTIFICATION_EMAIL:notifications@training.local}
+
 server:
   servlet:
     context-path: /api/document

@@ -6,6 +6,9 @@ import com.training.document.dto.SaveDocumentRequest;
 import com.training.document.dto.UpdateStatusRequest;
 import com.training.document.entity.Document;
 import com.training.document.exception.DocumentNotFoundException;
+import com.training.document.notification.NotificationMessage;
+import com.training.document.notification.NotificationProperties;
+import com.training.document.notification.NotificationSender;
 import com.training.document.repository.DocumentRepository;
 import com.training.document.repository.DocumentSpecifications;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +33,8 @@ public class DocumentServiceImpl implements DocumentService {
 
     private final DocumentRepository documentRepository;
     private final DrnGenerator drnGenerator;
+    private final NotificationSender notificationSender;
+    private final NotificationProperties notificationProperties;
 
     @Override
     @Transactional
@@ -42,6 +47,7 @@ public class DocumentServiceImpl implements DocumentService {
 
         Document saved = documentRepository.save(document);
         log.info("Document saved: id={}, drn={}, status={}", saved.getId(), saved.getDrn(), saved.getStatus());
+        notificationSender.send(NotificationMessage.forStatus(saved.getDrn(), saved.getStatus(), notificationProperties.getEmail()));
         return DocumentMapper.toResponse(saved);
     }
 
@@ -56,6 +62,7 @@ public class DocumentServiceImpl implements DocumentService {
         Document updated = documentRepository.saveAndFlush(document);
         log.info("Document status updated: id={}, drn={}, {} -> {}", updated.getId(), updated.getDrn(),
                 previousStatus, updated.getStatus());
+        notificationSender.send(NotificationMessage.forStatus(updated.getDrn(), updated.getStatus(), notificationProperties.getEmail()));
         return DocumentMapper.toResponse(updated);
     }
 
