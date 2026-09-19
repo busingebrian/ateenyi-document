@@ -17,6 +17,8 @@ spring:
       hibernate:
         default_schema: ${DB_SCHEMA:document}
         format_sql: false
+        hbm2ddl:
+          create_namespaces: true
 
 document:
   notification:
