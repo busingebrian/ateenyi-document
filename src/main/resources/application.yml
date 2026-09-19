@@ -27,6 +27,7 @@ document:
     email: ${NOTIFICATION_EMAIL:notifications@training.local}
 
 server:
+  forward-headers-strategy: framework
   servlet:
     context-path: /api/document
   port: 8080

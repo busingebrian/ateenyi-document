@@ -18,7 +18,7 @@ public class DrnGenerator {
     private final String qualifiedSequenceName;
 
     public DrnGenerator(JdbcTemplate jdbcTemplate,
-                        @Value("${spring.jpa.properties.hibernate.default_schema:document}") String schema) {
+                        @Value("${spring.jpa.properties.hibernate.default_schema}") String schema) {
         this.jdbcTemplate = jdbcTemplate;
         this.schema = schema;
         this.qualifiedSequenceName = schema + "." + SEQUENCE_NAME;
