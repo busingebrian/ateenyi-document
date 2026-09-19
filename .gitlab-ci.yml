@@ -70,5 +70,17 @@ deploy-train:
   image: curlimages/curl:latest
   variables:
     SVC: document          # service name
+    PORTAINER: https://portainer.t.utax.am
   script:
-    - 'curl -fsS -X POST -H "X-API-Key: $PORTAINER_TOKEN" -H "Content-Type: application/json" -d "{\"PullImage\":true}" "https://portainer.t.utax.am/api/docker/1/containers/ug-train-docker-${SVC}-1/recreate"'
+    - apk add -q curl jq
+    - |
+      ID=$(curl -fsS -H "X-API-Key: $PORTAINER_TOKEN" -G "$PORTAINER/api/endpoints/1/docker/containers/json" \
+        --data-urlencode "filters={\"name\":[\"^/ug-train-docker-${SVC}-1$\"]}" | jq -r '.[0].Id')
+      [ -n "$ID" ] && [ "$ID" != null ] || { echo "container for $SVC not found"; exit 1; }
+      CODE=$(curl -sS -o /tmp/r.json -w '%{http_code}' -X POST -H "X-API-Key: $PORTAINER_TOKEN" \
+        -H "Content-Type: application/json" -d '{"PullImage":true}' "$PORTAINER/api/docker/1/containers/$ID/recreate")
+      if [ "$CODE" = 200 ]; then
+        jq -r '"deployed \(.Name) image=\(.Config.Image) digest=\(.Image[7:19]) state=\(.State.Status)"' /tmp/r.json
+      else
+        jq -r '"FAILED HTTP '"$CODE"': \(.message) - \(.details)"' /tmp/r.json; exit 1
+      fi
