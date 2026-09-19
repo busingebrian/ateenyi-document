@@ -67,7 +67,7 @@ docker-build:
 
 deploy-train:
   stage: deploy
-  image: curlimages/curl:latest
+  image: alpine:3.20
   variables:
     SVC: document          # service name
     PORTAINER: https://portainer.t.utax.am
