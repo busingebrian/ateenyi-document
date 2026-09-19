@@ -1,3 +1,8 @@
+variables:
+  JAR_FILE: build/libs/document.jar
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+
+
 stages:
  - build
  - test
