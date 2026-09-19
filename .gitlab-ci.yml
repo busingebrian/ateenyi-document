@@ -63,3 +63,11 @@ docker-build:
     - if: $CI_COMMIT_BRANCH
       exists:
         - Dockerfile
+
+deploy-train:
+  stage: deploy
+  image: curlimages/curl:latest
+  variables:
+    SVC: document          # service name
+  script:
+    - 'curl -fsS -X POST -H "X-API-Key: $PORTAINER_TOKEN" -H "Content-Type: application/json" -d "{\"PullImage\":true}" "https://portainer.t.utax.am/api/docker/1/containers/ug-train-docker-${SVC}-1/recreate"'
