@@ -1,9 +1,25 @@
 stages:
  - build
+ - test
  - build-docker
 
 build:
   stage: build
+  #image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/gradle:jdk17
+  image: git.iunetworks.am:5050/iu/artifactory/images/gradle:jdk17
+  script: 
+      #- chmod +x ./gradlew
+      - ./gradlew bootJar --build-cache -Dmaven.repo.local="$MAVEN_USER_HOME/repository"
+  retry:
+    when: script_failure
+    max: 2
+  artifacts:
+    expire_in: 1 hrs
+    paths:
+      - $JAR_FILE
+
+test:
+  stage: test
   #image: ${CI_DEPENDENCY_PROXY_GROUP_IMAGE_PREFIX}/gradle:jdk17
   image: git.iunetworks.am:5050/ops/iunetworks_java:java25-gradle-deb-jdk
   script: 
