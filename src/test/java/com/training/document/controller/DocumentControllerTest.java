@@ -1,29 +1,28 @@
 package com.training.document.controller;
 
-import tools.jackson.databind.ObjectMapper;
 import com.training.document.dto.SaveDocumentRequest;
 import com.training.document.dto.UpdateStatusRequest;
 import com.training.document.entity.DocStatus;
 import com.training.document.entity.DocType;
+import com.training.document.entity.Document;
+import com.training.document.repository.DocumentRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -37,7 +36,10 @@ class DocumentControllerTest {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private DocumentRepository documentRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Test
     void save_validRequest_returns201WithGeneratedDrn() throws Exception {
@@ -158,9 +160,20 @@ class DocumentControllerTest {
     }
 
     private void insertDocument(String drn, String docType, LocalDateTime modifiedAt) {
-        jdbcTemplate.update(
-                "INSERT INTO document (id, drn, doc_type, status, content, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                UUID.randomUUID(), drn, docType, "SUBMITTED", "content", modifiedAt, modifiedAt);
+        Document document = new Document();
+        document.setDrn(drn);
+        document.setDocType(DocType.valueOf(docType));
+        document.setStatus(DocStatus.SUBMITTED);
+        document.setContent("content");
+        documentRepository.saveAndFlush(document);
+
+        // @PrePersist always stamps now(); backdate via a JPQL bulk update, which bypasses
+        // entity lifecycle callbacks, then clear the persistence context so later reads see it.
+        entityManager.createQuery("UPDATE Document d SET d.createdAt = :ts, d.modifiedAt = :ts WHERE d.id = :id")
+                .setParameter("ts", modifiedAt)
+                .setParameter("id", document.getId())
+                .executeUpdate();
+        entityManager.clear();
     }
 
     private SaveDocumentRequest saveRequest(DocType docType, DocStatus status, String content) {

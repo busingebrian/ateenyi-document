@@ -4,7 +4,7 @@ spring:
   main:
     banner-mode: off
   datasource:
-    url: jdbc:h2:file:./data/document;AUTO_SERVER=TRUE;INIT=CREATE SCHEMA IF NOT EXISTS document
+    url: jdbc:h2:file:./data/document;AUTO_SERVER=TRUE;
     driver-class-name: org.h2.Driver
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:}

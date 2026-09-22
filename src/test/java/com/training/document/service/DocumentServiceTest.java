@@ -5,13 +5,16 @@ import com.training.document.dto.SaveDocumentRequest;
 import com.training.document.dto.UpdateStatusRequest;
 import com.training.document.entity.DocStatus;
 import com.training.document.entity.DocType;
+import com.training.document.entity.Document;
 import com.training.document.exception.DocumentNotFoundException;
+import com.training.document.repository.DocumentRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -28,7 +31,10 @@ class DocumentServiceTest {
     private DocumentService documentService;
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private DocumentRepository documentRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Test
     void save_generatesDrnAndSetsCreatedAtEqualToModifiedAt() {
@@ -128,9 +134,20 @@ class DocumentServiceTest {
     }
 
     private void insertDocument(String drn, String docType, String status, LocalDateTime modifiedAt) {
-        jdbcTemplate.update(
-                "INSERT INTO document (id, drn, doc_type, status, content, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                UUID.randomUUID(), drn, docType, status, "content", modifiedAt, modifiedAt);
+        Document document = new Document();
+        document.setDrn(drn);
+        document.setDocType(DocType.valueOf(docType));
+        document.setStatus(DocStatus.valueOf(status));
+        document.setContent("content");
+        documentRepository.saveAndFlush(document);
+
+        // @PrePersist always stamps now(); backdate via a JPQL bulk update, which bypasses
+        // entity lifecycle callbacks, then clear the persistence context so later reads see it.
+        entityManager.createQuery("UPDATE Document d SET d.createdAt = :ts, d.modifiedAt = :ts WHERE d.id = :id")
+                .setParameter("ts", modifiedAt)
+                .setParameter("id", document.getId())
+                .executeUpdate();
+        entityManager.clear();
     }
 
     private SaveDocumentRequest saveRequest(DocType docType, DocStatus status, String content) {
