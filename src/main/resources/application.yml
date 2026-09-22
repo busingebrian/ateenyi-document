@@ -23,7 +23,7 @@ spring:
 document:
   notification:
     send-type: sync
-    url: http://${NOTIFICATION_URL:localhost}:8081/api/notification
+    url: http://${NOTIFICATION_URL:localhost}:8080/api/train-notification
     email: ${NOTIFICATION_EMAIL:notifications@training.local}
 
 server:
