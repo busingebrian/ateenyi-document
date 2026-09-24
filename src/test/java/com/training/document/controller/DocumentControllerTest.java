@@ -159,6 +159,56 @@ class DocumentControllerTest {
                 .andExpect(jsonPath("$.content[1].drn").value("rt-pg2"));
     }
 
+    @Test
+    void searchByPost_appliesBodyCriteriaAndPaging() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        insertDocument("rt-post1", "rt", now.minusMinutes(10));
+        insertDocument("rt-post2", "rt", now.minusMinutes(5));
+        insertDocument("tp-post3", "tp", now.minusMinutes(1));
+
+        mockMvc.perform(post("/document/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"drn\":\"post\",\"page\":0,\"size\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].drn").value("tp-post3"))
+                .andExpect(jsonPath("$.content[1].drn").value("rt-post2"));
+    }
+
+    @Test
+    void searchByPost_filtersByDocCode() throws Exception {
+        SaveDocumentRequest request = saveRequest(DocType.rt, DocStatus.SUBMITTED, "coded");
+        request.setDocCode("DC-POST");
+        mockMvc.perform(post("/document")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+        mockMvc.perform(post("/document")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(saveRequest(DocType.rt, DocStatus.SUBMITTED, "other"))))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/document/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"drn\":\"rt-\",\"docCode\":\"DC-POST\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].docCode").value("DC-POST"))
+                .andExpect(jsonPath("$.content[0].content").value("coded"));
+    }
+
+    @Test
+    void search_missingDrn_returns400ForGetAndPost() throws Exception {
+        mockMvc.perform(get("/document/search"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("invalid.drn"));
+        mockMvc.perform(post("/document/search")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("invalid.drn"));
+    }
+
     private void insertDocument(String drn, String docType, LocalDateTime modifiedAt) {
         Document document = new Document();
         document.setDrn(drn);

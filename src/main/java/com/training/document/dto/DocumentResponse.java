@@ -20,6 +20,8 @@ public class DocumentResponse {
     private DocStatus status;
     private String content;
     private String tin;
+    private String docCode;
+    private String viewId;
     private LocalDateTime createdAt;
     private LocalDateTime modifiedAt;
 }

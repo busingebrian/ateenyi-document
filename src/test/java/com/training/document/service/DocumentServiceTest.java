@@ -2,6 +2,7 @@ package com.training.document.service;
 
 import com.training.document.dto.DocumentResponse;
 import com.training.document.dto.SaveDocumentRequest;
+import com.training.document.dto.SearchDto;
 import com.training.document.dto.UpdateStatusRequest;
 import com.training.document.entity.DocStatus;
 import com.training.document.entity.DocType;
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -106,7 +106,7 @@ class DocumentServiceTest {
         insertDocument("rt-search2", "rt", "SUBMITTED", now.minusMinutes(5));
         insertDocument("tp-search3", "tp", "SUBMITTED", now.minusMinutes(5));
 
-        Page<DocumentResponse> results = documentService.searchByDrn("search", PageRequest.of(0, 20));
+        Page<DocumentResponse> results = documentService.searchByDrn(search("search", null, null, 0, 20));
 
         assertThat(results.getTotalElements()).isEqualTo(3);
         assertThat(results.getContent()).extracting(DocumentResponse::getDrn)
@@ -120,7 +120,7 @@ class DocumentServiceTest {
         insertDocument("rt-page2", "rt", "SUBMITTED", now.minusMinutes(5));
         insertDocument("tp-page3", "tp", "SUBMITTED", now.minusMinutes(1));
 
-        Page<DocumentResponse> firstPage = documentService.searchByDrn("page", PageRequest.of(0, 2));
+        Page<DocumentResponse> firstPage = documentService.searchByDrn(search("page", null, null, 0, 2));
 
         assertThat(firstPage.getTotalElements()).isEqualTo(3);
         assertThat(firstPage.getTotalPages()).isEqualTo(2);
@@ -130,7 +130,43 @@ class DocumentServiceTest {
 
     @Test
     void searchByDrn_noMatches_returnsEmptyPage() {
-        assertThat(documentService.searchByDrn("does-not-exist", PageRequest.of(0, 20)).getContent()).isEmpty();
+        assertThat(documentService.searchByDrn(search("does-not-exist", null, null, 0, 20)).getContent()).isEmpty();
+    }
+
+    @Test
+    void save_persistsDocCodeAndViewId() {
+        SaveDocumentRequest request = saveRequest(DocType.rt, DocStatus.SUBMITTED, "codes");
+        request.setDocCode("DC-1");
+        request.setViewId("view-1");
+
+        DocumentResponse saved = documentService.save(request);
+
+        assertThat(saved.getDocCode()).isEqualTo("DC-1");
+        assertThat(saved.getViewId()).isEqualTo("view-1");
+        DocumentResponse fetched = documentService.getById(saved.getId());
+        assertThat(fetched.getDocCode()).isEqualTo("DC-1");
+        assertThat(fetched.getViewId()).isEqualTo("view-1");
+    }
+
+    @Test
+    void searchByDrn_filtersByDocCodeAndViewId() {
+        SaveDocumentRequest first = saveRequest(DocType.rt, DocStatus.SUBMITTED, "a");
+        first.setDocCode("DC-A");
+        first.setViewId("view-1");
+        SaveDocumentRequest second = saveRequest(DocType.rt, DocStatus.SUBMITTED, "b");
+        second.setDocCode("DC-B");
+        second.setViewId("view-1");
+        DocumentResponse a = documentService.save(first);
+        DocumentResponse b = documentService.save(second);
+
+        assertThat(documentService.searchByDrn(search("rt-", "DC-A", null, 0, 20)).getContent())
+                .extracting(DocumentResponse::getId).containsExactly(a.getId());
+        assertThat(documentService.searchByDrn(search("rt-", null, "view-1", 0, 20)).getContent())
+                .extracting(DocumentResponse::getId).containsExactlyInAnyOrder(a.getId(), b.getId());
+        assertThat(documentService.searchByDrn(search("rt-", "DC-B", "view-1", 0, 20)).getContent())
+                .extracting(DocumentResponse::getId).containsExactly(b.getId());
+        assertThat(documentService.searchByDrn(search("rt-", "DC-A", "view-2", 0, 20)).getContent())
+                .isEmpty();
     }
 
     private void insertDocument(String drn, String docType, String status, LocalDateTime modifiedAt) {
@@ -156,6 +192,16 @@ class DocumentServiceTest {
         request.setStatus(status);
         request.setContent(content);
         return request;
+    }
+
+    private SearchDto search(String drn, String docCode, String viewId, int page, int size) {
+        SearchDto searchDto = new SearchDto();
+        searchDto.setDrn(drn);
+        searchDto.setDocCode(docCode);
+        searchDto.setViewId(viewId);
+        searchDto.setPage(page);
+        searchDto.setSize(size);
+        return searchDto;
     }
 
     private UpdateStatusRequest statusRequest(UUID id, DocStatus status) {

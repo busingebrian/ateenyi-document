@@ -11,4 +11,12 @@ public final class DocumentSpecifications {
     public static Specification<Document> drnContains(String drn) {
         return (root, query, cb) -> cb.like(cb.lower(root.get("drn")), "%" + drn.toLowerCase() + "%");
     }
+
+    public static Specification<Document> docCodeEquals(String docCode) {
+        return (root, query, cb) -> cb.equal(root.get("docCode"), docCode);
+    }
+
+    public static Specification<Document> viewIdEquals(String viewId) {
+        return (root, query, cb) -> cb.equal(root.get("viewId"), viewId);
+    }
 }

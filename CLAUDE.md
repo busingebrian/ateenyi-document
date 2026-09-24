@@ -95,8 +95,12 @@ modifications must be visible at info).
 
 ### Search
 
-`GET /document/search?drn=&page=&size=` uses `DocumentSpecifications.drnContains` (case-insensitive `LIKE %drn%`)
-via `JpaSpecificationExecutor`, returning a Spring Data `Page<DocumentResponse>`. The sort is **fixed server-side**
+`GET /document/search?drn=&docCode=&viewId=&page=&size=` (query params) and `POST /document/search` (same fields
+as a JSON body) both bind to `SearchDto` and call `DocumentService.searchByDrn(SearchDto)`. It uses
+`DocumentSpecifications.drnContains`
+(case-insensitive `LIKE %drn%`), AND-ed with exact-match `docCodeEquals` / `viewIdEquals` when those optional params
+are non-blank, via `JpaSpecificationExecutor`, returning a Spring Data `Page<DocumentResponse>`. The sort is **fixed
+server-side**
 (`modifiedAt` desc, then `docType` asc) inside `DocumentServiceImpl.searchByDrn` — client-supplied `page`/`size` are
 honored, but there is deliberately no client-controlled sort parameter, so the ordering guarantee can't be bypassed.
 

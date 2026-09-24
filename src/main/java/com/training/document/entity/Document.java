@@ -39,6 +39,12 @@ public class Document {
     @Column(name = "tin", length = 20)
     private String tin;
 
+    @Column(name = "doc_code")
+    private String docCode;
+
+    @Column(name = "view_id")
+    private String viewId;
+
     @Column(name = "created_at", updatable = false, nullable = false)
     private LocalDateTime createdAt;
 

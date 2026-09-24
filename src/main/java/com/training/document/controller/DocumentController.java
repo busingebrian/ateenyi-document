@@ -2,22 +2,14 @@ package com.training.document.controller;
 
 import com.training.document.dto.DocumentResponse;
 import com.training.document.dto.SaveDocumentRequest;
+import com.training.document.dto.SearchDto;
 import com.training.document.dto.UpdateStatusRequest;
 import com.training.document.service.DocumentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -50,9 +42,12 @@ public class DocumentController {
     }
 
     @GetMapping("/search")
-    public Page<DocumentResponse> search(@RequestParam String drn,
-                                          @RequestParam(defaultValue = "0") int page,
-                                          @RequestParam(defaultValue = "10") int size) {
-        return documentService.searchByDrn(drn, PageRequest.of(page, size));
+    public Page<DocumentResponse> search(@Valid @ModelAttribute SearchDto searchDto) {
+        return documentService.searchByDrn(searchDto);
+    }
+
+    @PostMapping("/search")
+    public Page<DocumentResponse> searchByBody(@Valid @RequestBody SearchDto searchDto) {
+        return documentService.searchByDrn(searchDto);
     }
 }

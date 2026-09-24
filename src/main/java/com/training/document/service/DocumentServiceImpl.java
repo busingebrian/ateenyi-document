@@ -1,9 +1,6 @@
 package com.training.document.service;
 
-import com.training.document.dto.DocumentMapper;
-import com.training.document.dto.DocumentResponse;
-import com.training.document.dto.SaveDocumentRequest;
-import com.training.document.dto.UpdateStatusRequest;
+import com.training.document.dto.*;
 import com.training.document.entity.Document;
 import com.training.document.exception.DocumentNotFoundException;
 import com.training.document.notification.NotificationMessage;
@@ -45,6 +42,8 @@ public class DocumentServiceImpl implements DocumentService {
         document.setStatus(request.getStatus());
         document.setContent(request.getContent());
         document.setTin(request.getTin());
+        document.setDocCode(request.getDocCode());
+        document.setViewId(request.getViewId());
 
         Document saved = documentRepository.save(document);
         log.info("Document saved: id={}, drn={}, status={}", saved.getId(), saved.getDrn(), saved.getStatus());
@@ -82,9 +81,17 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Page<DocumentResponse> searchByDrn(String drn, Pageable pageable) {
-        Specification<Document> spec = DocumentSpecifications.drnContains(drn);
-        Pageable sortedPageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), SEARCH_SORT);
-        return documentRepository.findAll(spec, sortedPageable).map(DocumentMapper::toResponse);
+    public Page<DocumentResponse> searchByDrn(SearchDto searchDto) {
+        Specification<Document> spec = DocumentSpecifications.drnContains(searchDto.getDrn());
+        String docCode = searchDto.getDocCode();
+        if (docCode != null && !docCode.isBlank()) {
+            spec = spec.and(DocumentSpecifications.docCodeEquals(docCode));
+        }
+        String viewId = searchDto.getViewId();
+        if (viewId != null && !viewId.isBlank()) {
+            spec = spec.and(DocumentSpecifications.viewIdEquals(viewId));
+        }
+        Pageable pageable = PageRequest.of(searchDto.getPage(), searchDto.getSize(), SEARCH_SORT);
+        return documentRepository.findAll(spec, pageable).map(DocumentMapper::toResponse);
     }
 }

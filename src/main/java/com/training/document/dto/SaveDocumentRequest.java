@@ -25,4 +25,8 @@ public class SaveDocumentRequest {
     private String content;
 
     private String tin;
+
+    private String docCode;
+
+    private String viewId;
 }
