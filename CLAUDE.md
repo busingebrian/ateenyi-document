@@ -85,12 +85,15 @@ com.training.document/
 - `MethodArgumentNotValidException` (bean-validation failures on `@Valid @RequestBody` DTOs) → HTTP 400,
   body is `ValidationErrors{errors: [{code, message}]}` collecting **every** field violation at once (not
   fail-fast), one `ValidationError` per violation. `code` is always `invalid.<fieldName>`.
+- `jakarta.validation.ConstraintViolationException` (method-level validation, e.g. `@Validated` beans) → HTTP 400,
+  same `ValidationErrors` shape. `code` is `invalid.<field>`, where `<field>` comes from the violation's property
+  path (`PROPERTY` nodes, e.g. `items[0].name`), falling back to the parameter name for plain method parameters.
 - `HttpMessageNotReadableException` (malformed JSON, or a value that doesn't fit an enum, e.g. `"docType":"xx"`) is
   also normalized into the same `ValidationErrors` shape (400) rather than bubbling into a generic 500 — it walks
   the Jackson `JacksonException` cause chain to recover the offending field name when possible.
 - `DocumentNotFoundException` → HTTP 404 with a single `ValidationError`-shaped body (`code: "not.found"`).
 
-All three code paths log at `info` level, per the logging requirement (validation failures and successful
+All of these code paths log at `info` level, per the logging requirement (validation failures and successful
 modifications must be visible at info).
 
 ### Search

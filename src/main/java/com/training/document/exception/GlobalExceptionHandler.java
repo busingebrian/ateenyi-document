@@ -2,6 +2,10 @@ package com.training.document.exception;
 
 import com.training.document.dto.ValidationError;
 import com.training.document.dto.ValidationErrors;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.ElementKind;
+import jakarta.validation.Path;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -28,6 +32,16 @@ public class GlobalExceptionHandler {
         return new ValidationErrors(errors);
     }
 
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ValidationErrors handleConstraintViolation(ConstraintViolationException e) {
+        List<ValidationError> errors = e.getConstraintViolations().stream()
+                .map(this::toValidationError)
+                .toList();
+        log.info("Validation failed: {}", errors);
+        return new ValidationErrors(errors);
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ValidationErrors handleMalformedRequest(HttpMessageNotReadableException e) {
@@ -45,6 +59,32 @@ public class GlobalExceptionHandler {
 
     private ValidationError toValidationError(FieldError fieldError) {
         return new ValidationError("invalid." + fieldError.getField(), fieldError.getDefaultMessage());
+    }
+
+    private ValidationError toValidationError(ConstraintViolation<?> violation) {
+        return new ValidationError("invalid." + toFieldName(violation.getPropertyPath()), violation.getMessage());
+    }
+
+    // Builds the field name from the PROPERTY nodes of the path (e.g. "items[0].name"), falling back to the
+    // PARAMETER node name for violations on plain method parameters (e.g. "drn").
+    private String toFieldName(Path propertyPath) {
+        StringBuilder fieldName = new StringBuilder();
+        String parameterName = null;
+        for (Path.Node node : propertyPath) {
+            if (node.getKind() == ElementKind.PROPERTY) {
+                if (node.getIndex() != null) {
+                    fieldName.append('[').append(node.getIndex()).append("].").append(node.getName());
+                } else {
+                    if (!fieldName.isEmpty()) {
+                        fieldName.append('.');
+                    }
+                    fieldName.append(node.getName());
+                }
+            } else if (node.getKind() == ElementKind.PARAMETER) {
+                parameterName = node.getName();
+            }
+        }
+        return !fieldName.isEmpty() ? fieldName.toString() : parameterName;
     }
 
     private ValidationError toValidationError(HttpMessageNotReadableException e) {
