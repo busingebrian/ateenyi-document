@@ -51,7 +51,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(DocumentNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ValidationError handleNotFound(DocumentNotFoundException e) {
         log.info(e.getMessage());
         return new ValidationError("not.found", e.getMessage());

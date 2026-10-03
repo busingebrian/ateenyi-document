@@ -15,7 +15,6 @@ import lombok.ToString;
 public class SaveDocumentRequest {
 
     @NotNull(message = "docType is required")
-    @Size(max = 2)
     private DocType docType;
 
     @NotNull(message = "status is required")
@@ -28,7 +27,9 @@ public class SaveDocumentRequest {
     @Size(max = 20)
     private String tin;
 
+    @Size(max = 255)
     private String docCode;
 
+    @Size(max = 255)
     private String viewId;
 }

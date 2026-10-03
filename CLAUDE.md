@@ -91,7 +91,8 @@ com.training.document/
 - `HttpMessageNotReadableException` (malformed JSON, or a value that doesn't fit an enum, e.g. `"docType":"xx"`) is
   also normalized into the same `ValidationErrors` shape (400) rather than bubbling into a generic 500 — it walks
   the Jackson `JacksonException` cause chain to recover the offending field name when possible.
-- `DocumentNotFoundException` → HTTP 404 with a single `ValidationError`-shaped body (`code: "not.found"`).
+- `DocumentNotFoundException` → HTTP 400 (deliberately not 404) with a single `ValidationError`-shaped body (
+  `code: "not.found"`).
 
 All of these code paths log at `info` level, per the logging requirement (validation failures and successful
 modifications must be visible at info).

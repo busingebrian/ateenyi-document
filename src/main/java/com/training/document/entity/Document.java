@@ -39,10 +39,10 @@ public class Document {
     @Column(name = "tin", length = 20)
     private String tin;
 
-    @Column(name = "doc_code")
+    @Column(name = "doc_code", length = 255)
     private String docCode;
 
-    @Column(name = "view_id")
+    @Column(name = "view_id", length = 255)
     private String viewId;
 
     @Column(name = "created_at", updatable = false, nullable = false)

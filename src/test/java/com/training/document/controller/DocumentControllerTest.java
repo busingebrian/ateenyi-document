@@ -112,7 +112,7 @@ class DocumentControllerTest {
     }
 
     @Test
-    void updateStatus_unknownId_returns404() throws Exception {
+    void updateStatus_unknownId_returns400() throws Exception {
         UpdateStatusRequest request = new UpdateStatusRequest();
         request.setId(UUID.randomUUID());
         request.setStatus(DocStatus.APPROVED);
@@ -120,13 +120,13 @@ class DocumentControllerTest {
         mockMvc.perform(patch("/document/status")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void getById_unknownId_returns404() throws Exception {
+    void getById_unknownId_returns400() throws Exception {
         mockMvc.perform(get("/document/{id}", UUID.randomUUID()))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
     }
 
     @Test
