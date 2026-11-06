@@ -16,7 +16,7 @@ search). Standalone — no shared code or dependencies with any other `document`
 ./gradlew bootRun
 ```
 
-The app starts on port `8080` under context path `/api/document`, backed by a file-based H2 database under
+The app starts on port `3002` under context path `/api/document`, backed by a file-based H2 database under
 `./data/document` (override with the `DB_FILE_PATH` environment variable).
 
 ## Testing
